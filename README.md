@@ -426,6 +426,3 @@ The **SeeOtter Sequential Processing GUI** offers a clear workflow for aerial im
 - **Phone**: +1 (800) 123-4567  
 - **Website**: [Wildlife AI Support](https://www.wildlifeai.org/support)
 
----
-
-*End of SeeOtter Comprehensive README.*
