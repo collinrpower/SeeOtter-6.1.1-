@@ -1,510 +1,431 @@
-# SeeOtter Sequential Processing GUI
-
-## Overview
-
-The **SeeOtter Sequential Processing GUI** is a comprehensive, step-by-step application designed to guide users through the processing of aerial imagery for wildlife monitoring, specifically sea otters. This guide provides detailed workflows to ensure accurate, efficient, and reliable data processing and validation, integrating seamlessly with the SeeOtter platform.
-
----
 
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage Guide](#usage-guide)
-  - [Step 1: Backup Camera Files to Hard Drive](#step-1-backup-camera-files-to-hard-drive)
-  - [Step 2: Organize Image Files into '0' and '1' Camera Folders](#step-2-organize-image-files-into-0-and-1-camera-folders)
-  - [Step 3: Extract Image Metadata and Verify Data Quality](#step-3-extract-image-metadata-and-verify-data-quality)
-  - [Step 4: Assign Images to Transects](#step-4-assign-images-to-transects)
-  - [Step 5: Run Preprocessing](#step-5-run-preprocessing)
-  - [Step 6: Crop Images](#step-6-crop-images)
-  - [Step 7: Run SeeOtter Processing and Validate Predictions](#step-7-run-seeotter-processing-and-validate-predictions)
-  - [Step 8: Final Processing](#step-8-final-processing)
-  - [Step 9: Cloning Filtered Surveys for Multiple Observers](#step-9-cloning-filtered-surveys-for-multiple-observers)
-- [Features](#features)
-- [Troubleshooting](#troubleshooting)
-- [Support](#support)
+1. [Introduction](#introduction)  
+2. [Quick Step-by-Step Instructions](#quick-step-by-step-instructions)  
+3. [Comprehensive Workflow Explanation](#comprehensive-workflow-explanation)  
+4. [Detailed Installation and Setup Guide](#detailed-installation-and-setup-guide)  
+5. [Model Training User Guide (Iterative Active Learning)](#model-training-user-guide-iterative-active-learning)  
+6. [Sequential Processing GUI](#sequential-processing-gui)  
+7. [Troubleshooting and Support](#troubleshooting-and-support)
 
 ---
 
-## Prerequisites
+## Introduction
 
-Before you begin, ensure the following requirements are met:
+SeeOtter is a workflow and software suite focused on aerial photography processing and wildlife detection, specifically for sea otter monitoring. It incorporates:
 
-1. **Python Environment**:
-   - Install Python 3.8 or higher.
-   - Install the required Python libraries by running:
-     ```bash
-     pip install pandas numpy pillow folium tkinter
-     ```
+- **YOLOv5**-based object detection  
+- **Automated** and **interactive** tools for image backup, annotation, and validation  
+- Iterative model training via **active learning**
 
-2. **Hardware Requirements**:
-   - **Three External Drives**:
-     - **Two Archival Drives**:
-       - Large external hard drives (HDDs) for backups.
-       - These drives will serve as archives and will not be processed.
-     - **One Working Drive**:
-       - A 1-2 TB external solid-state drive (SSD) is recommended.
-       - This drive will be used for data processing.
-   - **Important**:
-     - Do **not** move HDDs while reading or writing data to prevent data loss.
+This README provides:
 
-3. **SeeOtter Scripts and Tools**:
-   Ensure you have access to the following scripts and executables:
-   - `Backup_Images.py`
-   - `Move_Waldo_Images_Into_1_0_folders.py`
-   - `Image_GPS_extract.py`
-   - `SeeOtter_prepro_GUI_non_Waldo_with_GPS_fix.py`
-   - `SeeOtter_post_pro_count_and_split_odd_even.py`
-   - `SeeOtter.exe` (the main executable for SeeOtter)
+- Quick start steps  
+- Comprehensive instructions  
+- Detailed setup information  
+- Model training guidelines  
+- Full sequential processing workflow  
+- Troubleshooting tips and support contacts
 
 ---
 
-## Installation
+## Quick Step-by-Step Instructions
 
-1. **Clone or Download the Repository**:
-   - Place the application files into a local directory on your machine.
+### 1. Organize and Backup Data
 
-2. **Set the Working Directory**:
-   - Modify the working directory in your script to point to your local directory:
-     ```python
-     os.chdir('E:\\SeeOtterUSGS\\SeeOtter_pre_post-main')
-     ```
-     Replace `'E:\\SeeOtterUSGS\\SeeOtter_pre_post-main'` with the path to your project directory.
+#### 1.1. Backup Camera Files
 
----
+**Automated Backup (Preferred)**  
+1. Run `Backup_Images.py`.  
+2. Specify at least **3 backup drives**.  
+3. Choose the destination folders; the script copies images from camera storage to these backups.
 
-## Usage Guide
+**Manual Backup (Alternative)**  
+1. Copy raw images to at least 3 physical drives.  
+2. Use a structured naming convention, for example:  
+   `[Project_Name]_[Survey_Date]_[Camera_ID]_[Location]`  
+3. Example directory structure:  
+    /Backups/Survey2024/  
+        ├── ExternalDrive1/  
+        ├── ExternalDrive2/  
+        ├── ExternalDrive3/
 
-Follow each step sequentially for accurate data processing.
-
-### Step 1: Backup Camera Files to Hard Drive
-
-**Objective**: Create multiple backups of your raw camera files to prevent data loss.
-
-**Instructions**:
-
-1. **Run `Backup_Images.py` to Automate the Process**:
-   - Launch the script.
-   - **Select the Number of Backups** you are going to make (at least **three**).
-   - **Select the Drive and Folder** where you want the backups placed.
-   - **Run the Script**.
-
-2. **Alternatively, Manually Copy and Paste**:
-   - Manually copy the camera files onto each backup drive.
-
-**Notes**:
-
-- **Backups should be made on at least 3 separate physical drives**.
-- **Two (or more) of these drives** will serve as **archives** and will not be processed.
-  - Large external hard drives (HDDs) work well for this purpose.
-- **One of these drives** will serve as the **working drive** where the data will be processed.
-  - A 1-2 TB external solid-state drive (SSD) is best for the working drive.
-  - HDDs will also work but you will see a decrease in performance.
-- **Do Not Move HDDs When Reading or Writing Data**.
-- After completion, **verify backups** by checking each destination folder to ensure the files have been copied correctly.
+**Verification**  
+- Check file counts/sizes.  
+- (Optional) Use checksums (`md5`, `sha256`) to verify integrity.  
+- Periodically test backups by accessing them.
 
 ---
 
-### Step 2: Organize Image Files into '0' and '1' Camera Folders
+#### 1.2. Move Image Files into '0' and '1' Camera Folders
 
-**Objective**: Move image files into `0` and `1` camera folders based on which camera the image was taken from.
+**For Non-Waldo Cameras**  
+1. Create a directory structure like:  
+    /BaseFolder/Location/Camera/Year/MM_DD/  
+        ├── 0/  
+        ├── 1/  
+2. Manually move images or use scripts to place them in the correct folder.
 
-**Instructions**:
+**For Waldo Cameras**  
+1. If filename starts with "0", move to folder `0`; if "1", move to folder `1`.  
+2. Run `Sort_Waldo_Camera_Images.py` to automate sorting.
 
-1. **Create a Folder Structure**:
-   - Your folder structure should look like this:
-     ```
-     \*Location*\*Camera*\*YYYY*\*MM_DD*\Images
-     ```
-     - Example:
-       ```
-       G:\GBLAtest\Waldo\2022\08_03\Images
-       ```
-
-2. **For Non-Waldo Cameras**:
-   - **Create an "Images" Folder** in your `MM_DD` folder.
-   - **Create Two New Folders** inside the `Images` folder named `0` and `1`.
-   - **Copy Images**:
-     - Copy all the images from the specific cameras into their respective folders (`0` or `1`).
-
-3. **For Waldo Cameras**:
-   - **Run `Move_Waldo_Images_Into_1_0_folders.py`**:
-     - Select your `MM_DD` folder when prompted.
-     - The script will automatically move the images into the proper `0` and `1` folders.
-
-**Notes**:
-
-- Ensure that the source folders only contain images from the specified cameras.
-- The application will create necessary directories if they do not exist.
+**Verification**  
+- Open random images in both folders to confirm sorting.  
+- Compare timestamps for sequential alignment.  
+- Check file counts for any missing images.
 
 ---
 
-### Step 3: Extract Image Metadata and Verify Data Quality
+### 2. Preprocess Images
 
-**Objective**: Extract GPS metadata and timestamps from images and verify data quality.
+#### 2.1. Extract Metadata and Verify Quality
 
-**Instructions**:
-
-1. **Run `Image_GPS_extract.py`**:
-   - A user input window will appear with two options.
-   - **For 'Select Input Folder'**:
-     - Choose the `Images` folder you created in Step 2.
-     - Folder structure should be:
-       ```
-       X:\*Location*\*Camera*\*YYYY*\*MM_DD*\Images
-       ```
-       - Example:
-         ```
-         G:\GBLAtest\Waldo\2022\08_03\Images
-         ```
-   - **Enter a Name for Your CSV**:
-     - Choose the folder where you would like it to be saved.
-
-2. **Verify Data Quality**:
-   - Open the CSV you just created to view:
-     - Image Filepaths
-     - Timestamps
-     - Latitudes
-     - Longitudes
-     - Altitudes
-   - Use mapping software (ArcMap, QGIS, Google Earth, etc.) to visualize the data.
-   - **Verify**:
-     - There are no large gaps with missing data.
-     - Images appear to be where they are supposed to be.
-
-3. **Optional**:
-   - **Upload a KML or SHP** of the proposed transects to be used as a reference.
-
-**Notes**:
-
-- Ensure that all images have GPS data embedded.
-- Missing GPS data may affect subsequent steps.
-- Close any CSV files before running the next steps to avoid file overwrite errors.
+1. Run `Image_GPS_extract.py`.  
+2. The script outputs a CSV with file path, datetime, latitude/longitude, and altitude.  
+3. Inspect the CSV for correctness.  
+4. If available, use KML/SHP files for a spatial cross-check.
 
 ---
 
-### Step 4: Assign Images to Transects
+#### 2.2. Assign Images to Transects
 
-**Objective**: Assign images to specific transects based on start and end points.
-
-**Instructions**:
-
-1. **Prepare a Transect Assignment CSV**:
-   - Use the `tx_assignment_template.csv` or create a CSV with 5 columns:
-     ```
-     start_img, end_img, transect_id, start_time, end_time
-     ```
-   - **Fill 'transect_id'** with the names of your proposed transects.
-
-2. **Set Start and End Points for Each Transect**:
-   - **Option 1: Using Filepaths**:
-     - Fill in the values for `start_img` and `end_img`.
-     - Use the full filepath with all forward slashes.
-       - Example:
-         ```
-         G:/GBLAtest/Waldo/2022/08_03/Images/0/20220803_81308_0_000_00_074.jpg
-         ```
-     - Ensure that `start_img` has a timestamp before `end_img`.
-     - This method references the image metadata to identify a time for the start and end images for each transect.
-   - **Option 2: Using Timestamps**:
-     - Fill in the values for `start_time` and `end_time`.
-     - Use this exact format: `YYYY:MM:DD HH:MM:SS`.
-     - Ensure that image timestamps and recorded times are in the same timezone.
-
-3. **Important**:
-   - **Do Not Fill Out Both Filepaths and Times**:
-     - Use one method and leave the other blank.
-
-4. **Verify Transect Assignments**:
-   - Use the maps created in previous steps to identify which images are the beginning and end of each transect.
-   - Ensure consistency in time zones and formatting.
-
-**Notes**:
-
-- Make sure your transect_assignment.csv is formatted properly:
-  - Correct filepaths with forward slashes.
-  - Correct timestamp format (`YYYY:MM:DD HH:MM:SS`).
-  - Correct capitalization in column headers (lowercase with underscores instead of spaces).
+1. Use a CSV with columns:
+   transect_id, start_img, end_img, start_time, end_time  
+2. (Optional) Manually pick start/end images in a map-based tool.  
+3. Save the transect assignment file.
 
 ---
 
-### Step 5: Run Preprocessing
+#### 2.3. Classify Images (Land/Water)
 
-**Objective**: Preprocess images, assign them to transects, and correct GPS errors if necessary.
-
-**Instructions**:
-
-1. **Run `SeeOtter_prepro_GUI_non_Waldo_with_GPS_fix.py`**:
-   - A window will pop up with several options.
-
-2. **Provide Inputs**:
-   - **Input Folder**:
-     - Select your `Images` folder inside your `MM_DD` folder.
-   - **Transect CSV**:
-     - Select the `transect_assignment.csv` that was created in Step 4.
-   - **Optional KML File**:
-     - The KML file is optional to fix GPS errors using a secondary GPS breadcrumb file for the tracklog.
-     - Select your KML file if available.
-     - **Note**:
-       - The KML must have GPS points and associated timestamps.
-       - This functionality may not work with all KML formats.
-
-3. **Process KML (If Used)**:
-   - With both the CSV and KML selected, run **'Convert KML to CSV'**.
-   - This will find the closest point (within 3 seconds) on the KML to the timestamps of your image files and update the image metadata with the alternate GPS locations.
-
-4. **Extract and Assign Transects**:
-   - Run **'Extract & Assign Transects'**.
-   - This could take a few minutes.
-   - This will generate `final_metadata.csv` in your `MM_DD` folder.
-     - Contains filepaths, GPS data, and a transect assignment for each image.
-   - If you uploaded a KML, this will also generate `final_metadata_updated.csv`.
-     - Contains the original image GPS coordinates and the updated coordinates.
-
-5. **Verify Assignments**:
-   - Check these CSVs to make sure the transects were assigned properly.
-   - Often the first rows will have blank values for the transect assignment column because they were captured in transit to the survey.
-   - If transects are not assigned properly:
-     - Check your `transect_assignment.csv` for formatting issues.
-     - Ensure that your metadata CSVs are closed before running the command again.
-
-**Notes**:
-
-- Common Issues:
-  - Incorrect filepaths or time formats.
-  - Mismatched time zones.
-  - Incorrect capitalization or formatting in CSV headers.
-- Ensure that the image metadata CSVs are closed before rerunning the process to avoid overwrite errors.
+1. Run `app.py` (Land vs Water Classifier).  
+2. Load the pre-trained model.  
+3. Classifier outputs predictions for selected images.  
+4. Validate results and save a final classification CSV.
 
 ---
 
-### Step 6: Crop Images
+#### 2.4. Run Preprocessing
 
-**Objective**: Crop images to improve quality by reducing vignetting effects and prepare them for processing.
-
-**Instructions**:
-
-1. **Set Input Parameters**:
-   - **Crop Pixel Size**:
-     - Determines how many pixels are cut off from all four edges of each image.
-     - **Default**: 125 pixels.
-     - This value helps reduce vignetting effects and overlaps between images.
-   - **Min Altitude (m)**:
-     - Specifies the lowest accepted altitude for images in meters.
-     - Everything below this altitude is not processed.
-     - **Default**: 152m (~500ft).
-   - **Max Altitude (m)**:
-     - Specifies the highest accepted altitude for images in meters.
-     - Everything above this altitude is not processed.
-     - **Default**: 244m (~800ft).
-
-2. **Run 'Crop Images'**:
-   - This will:
-     - Take every image labeled as on-transect within the specified altitude range.
-     - Copy these images into a new folder with an updated naming format compatible with SeeOtter.
-     - Crop each side by the specified number of pixels.
-     - Correct the image GPS metadata if a KML was used.
-
-3. **Processing Time**:
-   - This process could take a few hours.
-   - You can ensure that it is still running by navigating to the folder `cropped_images_on_tx` located in your `MM_DD` folder and checking if it is increasing in size.
-
-4. **Verify Cropped Images**:
-   - Open the new CSV in your `MM_DD` folder titled `final_metadata_updated_filepath.csv`.
-   - Use mapping software to visualize:
-     - Image Filepaths
-     - Transects
-     - Timestamps
-     - Latitudes
-     - Longitudes
-     - Altitudes
-   - Verify that there are no large gaps with missing data and images appear to be where they are supposed to be.
-   - Select only the points where the column `NewFilepath` is not blank to view the images that were selected as on-transect.
+1. Run `SeeOtter_prepro_GUI_non_Waldo_with_GPS_fix.py`.  
+2. Process images per transect assignments.  
+3. Fix GPS offsets (if using external KML).  
+4. Cropped images go to `cropped_images_on_tx`.  
+5. Verify GPS corrections, coverage, and image quality.
 
 ---
 
-### Step 7: Run SeeOtter Processing and Validate Predictions
+### 3. AI-Assisted Object Detection
 
-**Objective**: Process the images using SeeOtter and validate AI predictions.
+#### 3.1. Change Model Weights (Optional)
 
-**Instructions**:
-
-1. **Open `SeeOtter.exe`**:
-   - **Note**:
-     - The first time `SeeOtter.exe` is opened on a computer, it must be connected to the internet.
-     - Once the computer has run SeeOtter, there is no need for internet access in successive runs.
-
-2. **Create a New Survey**:
-   - Click the blue plus button in the top left corner of the Survey Manager screen.
-   - Fill in the required fields:
-     - **Survey Name**: Name of the survey.
-     - **Project Path**: Folder that the survey will be created in.
-       - Must be an existing folder.
-       - Point this to the newly generated `cropped_images_on_tx` folder in your `MM_DD` folder.
-     - **Images Path**:
-       - Folder containing cropped, on-transect images.
-       - Defaults to `[ProjectPath/Images]`.
-       - Should be `MM_DD/cropped_images_on_tx/Images`.
-       - It's recommended to use the default location to avoid file path issues.
-
-3. **Start Processing**:
-   - Press the green play button on the Processing card.
-   - Processing includes:
-     - Pre-Processing (load and georeference images).
-     - Processing (generate predictions).
-     - Post-Processing (georeference individuals and generate CSV).
-   - **Processing Time**:
-     - This process will take a long time depending on how many images your survey contains.
-     - Once pre-processing completes, the "Current State" will switch to `RUNNING_IMAGE_DETECTION` and progress will be displayed.
-     - This could take 2-4 days running on the computer's CPU.
-
-4. **Validation Settings**:
-   - Click on the wrench tool icon in the main screen to access settings.
-   - Add initials to **Validator Name** and check the **Validation Mode** checkbox.
-   - Select default settings such as starting zoom level.
-
-5. **Validate Predictions in OtterChecker9000**:
-   - Navigate to OtterChecker9000 using the button in the top right of the survey manager screen.
-   - **Validation Process**:
-     - Use the arrows at the top or arrow keys to navigate between images and predictions.
-     - The currently selected prediction is marked by a yellow tab above the annotation box.
-     - Click an annotation to select it as the current prediction.
-     - **Set Min Confidence** to `0.4` and uncheck the **'Show images with no predictions'** box.
-     - **Validation Labels**:
-       - **Correct (green)**: Prediction is accurate.
-       - **Incorrect (red)**: Prediction is not accurate.
-       - **Ambiguous (blue)**: Unclear whether the prediction is correct.
-     - **Adding Missing Annotations**:
-       - Click the pencil icon or press the `D` key to toggle annotation draw mode.
-       - Select the appropriate category from the dropdown next to the pencil icon.
-         - Default categories:
-           - `P` = Pup
-           - `O` = Otter
-           - `B` = Bird
-           - `Sl` = Sea Lion
-           - `Porp` = Porpoise
-       - Click and drag to draw new annotations.
-     - **Save Progress**:
-       - Press the save icon in the top right to save the project.
-       - A light grey circle will appear around the icon when there are unsaved changes.
-       - Save often to avoid losing work.
-
-6. **Secondary Validation (Optional)**:
-   - After initial validation, it's good practice to have a second observer review the predictions labeled "CORRECT".
-   - **Filters**:
-     - Set filters to only show "Correct" and "Unvalidated" predictions above 0.4 confidence.
-   - **Process**:
-     - Go through the predictions, ensuring there are no unvalidated predictions over the confidence threshold.
-     - Double-check each prediction labeled as correct.
-     - If the second observer disagrees, mark the prediction as ambiguous.
+1. Select new YOLO `.pt` file.  
+2. Replace `best.pt` in `ModelWeights` folder.  
+3. Test on a small batch of images.
 
 ---
 
-### Step 8: Final Processing
+#### 3.2. Edit Otter Checker Config
 
-**Objective**: Perform final data processing and prepare results for analysis.
-
-**Instructions**:
-
-1. **Run `SeeOtter_post_pro_count_and_split_odd_even.py`**:
-   - This script sums the number of individuals per image and removes image overlap (and potential double counts) by dividing the dataset into odd and even images, creating non-overlapping photo plots.
-
-2. **Outputs**:
-   - The final results are a CSV with the following columns:
-     - `ImageID`
-     - `Datetime`
-     - `FilePath`
-     - `CameraLatitude`
-     - `CameraLongitude`
-     - `CameraAltitude`
-     - **Counts per Image**:
-       - `o count` (otter count per image)
-       - `p count` (pup count per image)
-       - `o+p count` (combined otter and pup count per image)
-       - Counts for any other class you had bounding boxes for by image
-     - `transect_id`
-     - **Image Corners**:
-       - `ImageCorner1Lat`, `ImageCorner1Lon`
-       - `ImageCorner2Lat`, `ImageCorner2Lon`
-       - `ImageCorner3Lat`, `ImageCorner3Lon`
-       - `ImageCorner4Lat`, `ImageCorner4Lon`
-
-3. **Verify Final Results**:
-   - Use mapping software to visualize and verify the results.
-   - Ensure there are no double counts and data aligns with expectations.
+1. Open the Otter Checker config file.  
+2. Update image tags/annotation categories to match the new model.  
+3. Test to ensure correct annotation display.
 
 ---
 
-### Step 9: Cloning Filtered Surveys for Multiple Observers
+#### 3.3. Run SeeOtter Processing
 
-**Objective**: Allow multiple observers to validate ambiguous predictions for increased accuracy.
-
-**Instructions**:
-
-1. **Create a Filtered Cloned Survey**:
-   - Use the **'Clone Filtered Survey'** feature in SeeOtter.
-   - This allows you to create a copy of a survey while filtering by validation type.
-   - Select only the "Ambiguous" validations to include.
-   - This reduces the file size, making it easier to share.
-
-2. **Share the Cloned Survey**:
-   - Distribute the cloned survey to additional observers who have access to SeeOtter.
-   - Each validator will need a copy of the survey.
-
-3. **Validation Process**:
-   - Validators review the ambiguous predictions.
-   - Each validator's input helps resolve uncertainties through majority agreement.
-
-**Notes**:
-
-- It's recommended to have an odd number of validators to avoid ties.
-- Ensure that all validators use consistent settings to maintain data integrity.
+1. Launch `SeeOtter.exe`.  
+2. Set `cropped_images_on_tx` as the input directory.  
+3. Run the processing pipeline; verify detection results in the output folder.
 
 ---
 
-## Features
+#### 3.4. Prediction Validation
 
-- **Step-by-Step Workflow**: Guides users through each processing step to ensure accuracy.
-- **Automated Backups**: Simplifies the process of creating multiple data backups.
-- **Metadata Extraction**: Automatically extracts GPS and timestamp metadata from images.
-- **Customizable Validation**: Allows for detailed validation of AI predictions using OtterChecker9000.
-- **Cloning Surveys**: Facilitates collaborative validation by creating smaller, manageable survey files.
+1. Review bounding boxes, confidence scores.  
+2. Mark detections: **Correct**, **Incorrect**, or **Ambiguous**.  
+3. Save these validation results in the annotation file.
 
 ---
 
-## Troubleshooting
+#### 3.5. Final Processing
 
-- **Script Execution Errors**:
-  - Ensure all required Python dependencies are installed.
-  - Verify that all script paths are correctly set in the application.
-
-- **File Not Found**:
-  - Check that input folders and files exist and are accessible.
-  - Ensure you have the necessary permissions to read/write files.
-
-- **Processing Errors**:
-  - Review logs for specific error messages.
-  - Check that all previous steps have been completed successfully.
-  - Verify the formatting and content of CSV files.
-
-- **Validation Issues**:
-  - Ensure that the configuration files are correctly set up.
-  - Re-run validation in OtterChecker9000 if discrepancies are found.
-
-- **GPS Data Missing**:
-  - Ensure that images have embedded GPS metadata.
-  - Verify the KML file format and compatibility if used for GPS correction.
+1. Run `SeeOtter_post_pro_count_and_split_odd_even.py`.  
+2. **Cleanup**: Remove invalid detections.  
+3. **Validation**: Confirm all detections are addressed.  
+4. **Count**: Generate sea otter population count.  
+5. **Effort**: Report survey effort metrics.  
+6. **Geospatial**: Output a shapefile of validated locations.  
+7. Verify CSV, shapefile, counts, and coverage.
 
 ---
 
-## Support
+## Comprehensive Workflow Explanation
 
-For assistance or to report issues, please contact:
+### 1. Organize and Backup Data
 
-- **Email**: support@wildlifeai.org
-- **Phone**: +1 (800) 123-4567
+#### 1.1. Backup Camera Files
+
+**Importance**
+- Protect raw aerial imagery against data loss.
+- Retain unaltered originals for future analysis.
+
+**How to Perform**
+- **Automated** (`Backup_Images.py`) or **Manual** copy.
+- Keep at least three physical backups.
+- Use structured naming:
+  `[Project_Name]_[Survey_Date]_[Camera_ID]_[Location]`
+- Verify file sizes, use checksums, test readability.
+
+---
+
+#### 1.2. Move Image Files into '0' and '1' Camera Folders
+
+**Importance**
+- Splitting dual-camera imagery prevents overlap issues.
+- Essential for correct transect assignments.
+
+**How to Perform**
+- **Non-Waldo**: Manually create `0` and `1` folders.
+- **Waldo**: Use `Sort_Waldo_Camera_Images.py` for auto-sorting.
+
+**Verification**
+- Random checks on images.
+- Confirm timestamps are sequential.
+- Check file counts.
+
+---
+
+### 2. Preprocess Images
+
+#### 2.1. Extract Metadata & Verify Data
+
+- Run `Image_GPS_extract.py` to create a CSV with timestamps and GPS.
+- Check lat/long, altitudes, and time consistency.
+- Compare with KML/SHP if needed.
+
+---
+
+#### 2.2. Assign Images to Transects
+
+- Use a CSV with start/end images or timestamps.  
+- Ensure no overlaps/gaps.  
+- Save the file.
+
+---
+
+#### 2.3. Classify Images as Land or Water
+
+- Run `app.py` with a deep learning model.  
+- Validate uncertain predictions.  
+- Only water images proceed.
+
+---
+
+#### 2.4. Run Preprocessing
+
+- Run `SeeOtter_prepro_GUI_non_Waldo_with_GPS_fix.py`.  
+- Refine GPS data.  
+- Cropped images go to `cropped_images_on_tx`.  
+- Verify final metadata.
+
+---
+
+### 3. AI-Assisted Object Detection
+
+#### 3.1. Change Model Weights (Optional)
+
+- Replace `best.pt` with a new YOLO `.pt`.  
+- Test on a subset before full processing.
+
+---
+
+#### 3.2. Edit Otter Checker Config
+
+- Align config (tags, categories) with the model’s classes.  
+- Run a sample detection to confirm annotation display.
+
+---
+
+#### 3.3. Run SeeOtter Processing
+
+- Launch `SeeOtter.exe`.  
+- Specify `cropped_images_on_tx` as input.  
+- Spot-check final detection outputs.
+
+---
+
+#### 3.4. Prediction Validation
+
+- Examine bounding boxes/confidence scores.  
+- Mark correct/incorrect/ambiguous.  
+- Save the validation statuses.
+
+---
+
+#### 3.5. Final Processing
+
+- Run `SeeOtter_post_pro_count_and_split_odd_even.py`.  
+- Clean data, finalize counts, and produce a shapefile.  
+- Confirm coverage and accuracy.
+
+---
+
+## Detailed Installation and Setup Guide
+
+### 1.1. About SeeOtter
+
+- Processes and validates aerial imagery.  
+- Utilizes YOLOv5 for object detection.  
+- Annotation and validation tools included.
+
+### 1.2. System Requirements
+
+- Windows PC  
+- Minimum 8GB RAM (more recommended)  
+- Nvidia GPU recommended for performance
+
+### 1.3. Installation Steps
+
+1. **Download**  
+   - Obtain SeeOtter from its repository or website.
+
+2. **Extract**  
+   - Unzip/copy the SeeOtter folder to a chosen location.
+
+3. **Verify Files**  
+   - Must include:
+       - `SeeOtter.exe`
+       - `see_otter_config.json`
+       - `otter_checker_config.json`
+       - Supporting folders/files
+
+### 1.4. Initial Setup and Configuration
+
+1. **Launch Application**  
+   - Double-click `SeeOtter.exe`.
+
+2. **First-Time Configuration**  
+   - Default config files created if missing.
+   - Adjust `see_otter_config.json` and `otter_checker_config.json` if needed.
+
+3. **System Check**  
+   - Confirm GPU recognition (console output).  
+   - Adjust Windows scaling if the UI is cut off.
+
+### 1.5. Troubleshooting & Next Steps
+
+- **Startup Failure**: Check config validity.  
+- **Display Issues**: Adjust Windows display settings.  
+- Next, create a new survey or refer to model training guides.
+
+---
+
+## Model Training User Guide (Iterative Active Learning)
+
+### 1. Setup and Initialization
+
+- Install SeeOtter on a Windows PC meeting requirements.  
+- Launch `SeeOtter.exe`.
+
+### 2. Create a New Survey (Unannotated Dataset)
+
+1. In Survey Manager, click the **+** button.  
+2. Fill out:
+   - **Survey Name**
+   - **Project Path** (existing folder)
+   - **Images Path** (defaults to `[ProjectPath/Images]`)
+3. Click **Create New Survey**.
+
+### 3. Generate Initial Annotations
+
+1. Open the new survey (`savefile.json`).  
+2. Run **Processing** to get predictions.  
+3. In **OtterChecker9000**:
+   - Mark each detection as Correct, Incorrect, or Ambiguous.
+   - Export validated annotations to the **Annotations** folder.
+
+### 4. Train the Initial Model
+
+1. Export validated annotations to form your training dataset.  
+2. Split into training/validation sets.  
+3. Run training script (e.g., `Train_SeeOtter_Model.py`).  
+4. Save model weights (`initial_best.pt`).  
+5. Evaluate on the validation set.
+
+### 5. Active Learning Cycle
+
+1. **Run Detection** with the current `.pt` file.  
+2. **Review Annotations**; mark newly predicted bounding boxes.  
+3. **Update Dataset** with the newly validated annotations.  
+4. **Retrain** the model.  
+5. **Evaluate** repeatedly until performance is satisfactory.
+
+### 6. Final Evaluation and Deployment
+
+1. Test the final model on a separate test dataset.  
+2. Save final weights (e.g., `final_best.pt`).  
+3. Update OtterChecker to reference the final model.  
+4. Deploy for live detection.
+
+---
+
+## Sequential Processing GUI
+
+### Overview
+
+The **SeeOtter Sequential Processing GUI** offers a clear workflow for aerial imagery surveys, integrating with SeeOtter for wildlife detection.
+
+### Prerequisites
+
+1. **Python 3.8+** with `pandas`, `numpy`, `pillow`, `folium`, `tkinter`.  
+2. **Three External Drives** (two archival HDDs, one SSD).  
+3. **SeeOtter Scripts** like `Backup_Images.py`, `Image_GPS_extract.py`.
+
+### Installation
+
+1. **Clone/Download** the repository.  
+2. **Set Working Directory** in your scripts to the local path.
+
+### Usage Guide
+
+1. **Step 1**: Backup camera files (`Backup_Images.py` or manually).  
+2. **Step 2**: Organize images into `0`/`1` folders.  
+3. **Step 3**: Extract metadata (`Image_GPS_extract.py`).  
+4. **Step 4**: Assign images to transects using CSV.  
+5. **Step 5**: Preprocess (`SeeOtter_prepro_GUI_non_Waldo_with_GPS_fix.py`).  
+6. **Step 6**: Crop images (reduce vignetting).  
+7. **Step 7**: Run `SeeOtter.exe`; validate predictions in OtterChecker9000.  
+8. **Step 8**: Final processing (`SeeOtter_post_pro_count_and_split_odd_even.py`).  
+9. **Step 9**: Clone filtered surveys for multiple observers if needed.
+
+### Features
+
+- **Step-by-Step Workflow**: Minimizes errors at each stage.  
+- **Automated Backups**: Simplifies data preservation.  
+- **Metadata Extraction**: Integrates with GIS tools.  
+- **Interactive Validation**: OtterChecker9000 annotation checks.  
+- **Cloning Surveys**: Enables multi-observer collaboration.
+
+---
+
+## Troubleshooting and Support
+
+**Common Issues**  
+- **Script Execution Errors**: Check Python dependencies and file paths.  
+- **File Not Found**: Verify folder structures and permissions.  
+- **Processing Errors**: Review logs, confirm CSV formatting, ensure prior steps succeeded.  
+- **Validation Discrepancies**: Re-check config files; rerun OtterChecker if needed.  
+- **GPS Data Missing**: Verify EXIF data or KML file compatibility.
+
+**Support**  
+- **Email**: support@wildlifeai.org  
+- **Phone**: +1 (800) 123-4567  
 - **Website**: [Wildlife AI Support](https://www.wildlifeai.org/support)
 
 ---
 
-*This README was generated to assist users in effectively utilizing the SeeOtter Sequential Processing GUI for wildlife monitoring projects.*
+*End of SeeOtter Comprehensive README.*
