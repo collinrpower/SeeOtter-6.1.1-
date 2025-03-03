@@ -411,14 +411,17 @@ class ValidationWindow:
         self.classifier_page_label = tk.Label(self.phase2_frame, font=("Helvetica", 12))
         self.classifier_page_label.pack(pady=5)
 
+        # Add a callback to update image when the scale is moved
         self.phase2_img_scale = tk.Scale(
             self.phase2_frame, from_=100, to=900, orient='horizontal',
-            label="Display Size (px)"
+            label="Display Size (px)",
+            command=lambda val: self.load_classifier_image()
         )
         self.phase2_img_scale.set(700)
         self.phase2_img_scale.pack(pady=5)
 
-        self.final_classifier_images = self.classifier_images + self.misclassified_not_classifier
+        # Recompute final classifier images based on current classifications
+        self.final_classifier_images = [img for img in self.results if img['Classification'] == self.classifier_name]
         self.total_classifier = len(self.final_classifier_images)
         self.current_classifier_index = 0
 
@@ -427,6 +430,7 @@ class ValidationWindow:
             self.generate_final_csv()
             return
 
+        # Use a canvas as in phase1 (with a proper reference to the image)
         self.image_canvas = tk.Canvas(
             self.phase2_frame, width=700, height=700, bg='grey'
         )
@@ -471,26 +475,31 @@ class ValidationWindow:
 
         self.image_canvas.delete("all")
 
-        size = self.phase2_img_scale.get()
+        scale_size = self.phase2_img_scale.get()  # Maximum dimension for thumbnail
         try:
-            thumb_img = self.get_thumbnail_image(filename, size)
-            thumb_img = thumb_img.resize((size, size), Image.ANTIALIAS)
+            thumb_img = self.get_thumbnail_image(filename, scale_size)
             self.img_tk = ImageTk.PhotoImage(thumb_img)
             self.image_canvas.create_image(0, 0, anchor='nw', image=self.img_tk)
+            self.image_canvas.image = self.img_tk  # keep reference
+            disp_width, disp_height = thumb_img.size  # Actual displayed image size
         except Exception as e:
+            disp_width = disp_height = scale_size
             self.image_canvas.create_text(
-                size//2, size//2,
-                text="Not Found", fill="white", font=("Helvetica",20)
+                scale_size // 2, scale_size // 2,
+                text="Not Found", fill="white", font=("Helvetica", 20)
             )
 
-        self.cell_size = size // 10 if size >= 10 else 1
+        # Draw grid overlay (10x10) matching the displayed image dimensions
+        rows, cols = 10, 10
+        cell_width = disp_width / cols
+        cell_height = disp_height / rows
         self.grid = []
-        for i in range(10):
-            for j in range(10):
-                x1 = j * self.cell_size
-                y1 = i * self.cell_size
-                x2 = x1 + self.cell_size
-                y2 = y1 + self.cell_size
+        for i in range(rows):
+            for j in range(cols):
+                x1 = j * cell_width
+                y1 = i * cell_height
+                x2 = x1 + cell_width
+                y2 = y1 + cell_height
                 rect = self.image_canvas.create_rectangle(
                     x1, y1, x2, y2,
                     outline='white', tags="grid", fill=''
@@ -503,7 +512,7 @@ class ValidationWindow:
         self.update_grid_selection()
         self.image_canvas.bind("<Button-1>", self.on_canvas_click)
         self.image_canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.classifier_page_label.config(text=f"Image {self.current_classifier_index+1} of {self.total_classifier}")
+        self.classifier_page_label.config(text=f"Image {self.current_classifier_index + 1} of {self.total_classifier}")
 
     def update_grid_selection(self):
         filename = self.current_image_info['Filename']
