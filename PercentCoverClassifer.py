@@ -239,18 +239,20 @@ class ValidationWindow:
     def get_thumbnail_image(self, filename, max_size):
         parent_folder = os.path.abspath(os.path.join(self.folder_path, ".."))
         thumbnails_folder = os.path.join(parent_folder, "thumbnails")
-
         if not os.path.exists(thumbnails_folder):
             os.makedirs(thumbnails_folder)
         thumb_filename = os.path.splitext(filename)[0] + "_thumb.jpg"
         thumb_path = os.path.join(thumbnails_folder, thumb_filename)
         if os.path.exists(thumb_path):
-            thumb_img = Image.open(thumb_path).convert('RGB')
-        else:
-            original_path = os.path.join(self.folder_path, filename)
-            thumb_img = Image.open(original_path).convert('RGB')
-            thumb_img.thumbnail((max_size, max_size), Image.ANTIALIAS)
-            thumb_img.save(thumb_path, format="JPEG")
+            try:
+                thumb_img = Image.open(thumb_path).convert('RGB')
+                return thumb_img
+            except Exception as e:
+                pass  # if error, regenerate thumbnail
+        original_path = os.path.join(self.folder_path, filename)
+        thumb_img = Image.open(original_path).convert('RGB')
+        thumb_img.thumbnail((max_size, max_size), Image.ANTIALIAS)
+        thumb_img.save(thumb_path, format="JPEG")
         return thumb_img
 
     def setup_phase1(self):
@@ -472,43 +474,52 @@ class ValidationWindow:
             return
         self.current_image_info = self.final_classifier_images[self.current_classifier_index]
         filename = self.current_image_info['Filename']
-
         self.image_canvas.delete("all")
 
-        scale_size = self.phase2_img_scale.get()  # Maximum dimension for thumbnail
-        try:
-            thumb_img = self.get_thumbnail_image(filename, scale_size)
-            self.img_tk = ImageTk.PhotoImage(thumb_img)
-            self.image_canvas.create_image(0, 0, anchor='nw', image=self.img_tk)
-            self.image_canvas.image = self.img_tk  # keep reference
-            disp_width, disp_height = thumb_img.size  # Actual displayed image size
-        except Exception as e:
-            disp_width = disp_height = scale_size
-            self.image_canvas.create_text(
-                scale_size // 2, scale_size // 2,
-                text="Not Found", fill="white", font=("Helvetica", 20)
-            )
+        # Ensure canvas dimensions are updated
+        self.image_canvas.update_idletasks()
+        canvas_width = self.image_canvas.winfo_width()
+        canvas_height = self.image_canvas.winfo_height()
+        if canvas_width <= 1 or canvas_height <= 1:
+            canvas_width, canvas_height = 700, 700
 
-        # Draw grid overlay (10x10) matching the displayed image dimensions
+        try:
+            # Use existing thumbnail generation (no force regeneration)
+            thumb_img = self.get_thumbnail_image(filename, self.phase2_img_scale.get())
+            new_width, new_height = thumb_img.size
+            self.img_tk = ImageTk.PhotoImage(thumb_img)
+            offset_x = (canvas_width - new_width) // 2
+            offset_y = (canvas_height - new_height) // 2
+            self.image_canvas.create_image(offset_x, offset_y, anchor='nw', image=self.img_tk)
+            disp_width, disp_height = new_width, new_height
+        except Exception as e:
+            disp_width = disp_height = canvas_width
+            offset_x = offset_y = 0
+            self.image_canvas.create_text(canvas_width // 2, canvas_height // 2,
+                                          text="Not Found", fill="white", font=("Helvetica", 20))
+
+        # Draw grid overlay (10x10) based on displayed image dimensions
         rows, cols = 10, 10
         cell_width = disp_width / cols
         cell_height = disp_height / rows
         self.grid = []
         for i in range(rows):
             for j in range(cols):
-                x1 = j * cell_width
-                y1 = i * cell_height
+                x1 = offset_x + j * cell_width
+                y1 = offset_y + i * cell_height
                 x2 = x1 + cell_width
                 y2 = y1 + cell_height
-                rect = self.image_canvas.create_rectangle(
-                    x1, y1, x2, y2,
-                    outline='white', tags="grid", fill=''
-                )
+                rect = self.image_canvas.create_rectangle(x1, y1, x2, y2,
+                                                          outline='white', tags="grid", fill='')
                 self.grid.append(rect)
+        # Save cell dimensions and offsets for selection handling
+        self.cell_width = cell_width
+        self.cell_height = cell_height
+        self.offset_x = offset_x
+        self.offset_y = offset_y
 
         if filename not in self.selected_cells:
             self.selected_cells[filename] = set()
-
         self.update_grid_selection()
         self.image_canvas.bind("<Button-1>", self.on_canvas_click)
         self.image_canvas.bind("<B1-Motion>", self.on_canvas_drag)
@@ -530,11 +541,14 @@ class ValidationWindow:
         self.handle_selection(event, single_click=False)
 
     def handle_selection(self, event, single_click=True):
-        x, y = event.x, event.y
-        col = x // self.cell_size
-        row = y // self.cell_size
-        if not (0 <= col < 10 and 0 <= row < 10):
+        # Adjust click coordinates by image offset
+        x_adj = event.x - self.offset_x
+        y_adj = event.y - self.offset_y
+        # Check if click is within image bounds
+        if x_adj < 0 or y_adj < 0 or x_adj > (10 * self.cell_width) or y_adj > (10 * self.cell_height):
             return
+        col = int(x_adj / self.cell_width)
+        row = int(y_adj / self.cell_height)
         idx = row * 10 + col
         filename = self.current_image_info['Filename']
         if single_click:
