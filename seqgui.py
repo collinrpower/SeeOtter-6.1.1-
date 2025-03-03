@@ -3,6 +3,33 @@ import tkinter.ttk as ttk
 from tkinter import messagebox, scrolledtext
 import subprocess
 import os
+import sys  # Add this import at the top
+
+def run_script(script: str, log_callback) -> None:
+    """Execute the specified Python script and log its output.
+
+    Args:
+        script (str): Path to the Python script (relative or absolute).
+        log_callback (callable): Function to handle logging.
+    """
+    if not script:
+        messagebox.showinfo("Info", "This step requires manual or external intervention.")
+        log_callback("[INFO] No script is configured for this step.")
+        return
+    if not os.path.exists(script):
+        messagebox.showerror("Error", f"Script not found: {script}")
+        log_callback(f"[ERROR] Script not found: {script}")
+        return
+    try:
+        log_callback(f"[INFO] Running: {os.path.basename(script)}")
+        # Use sys.executable to ensure the current virtual environment is used.
+        result = subprocess.run([sys.executable, script], capture_output=True, text=True, check=False)
+        if result.stdout:
+            log_callback(result.stdout.strip())
+        if result.stderr:
+            log_callback(f"[ERROR] {result.stderr.strip()}")
+    except Exception as e:
+        log_callback(f"[EXCEPTION] Failed to run {script}: {str(e)}")
 
 def configure_style() -> None:
     style = ttk.Style()
@@ -76,7 +103,7 @@ STEPS = [
             },
             {
                 "name": "Classify Images as Land/Water",
-                "script": "PercentCoverLand.py",
+                "script": "PercentCoverClassifer.py",
                 "tutorial": (
                     "Classify images by environment (land or water) using a deep learning approach. "
                     "This helps filter out irrelevant images and improve AI detection performance."
@@ -105,7 +132,8 @@ STEPS = [
             },
             {
                 "name": "Run SeeOtter Processing",
-                "script": "run_seeotter_processing.py",
+                #"script": "run_seeotter_processing.py",
+                "script": "start_see_otter_no_survey.py",
                 "tutorial": (
                     "Process the preprocessed images with the AI model to generate "
                     "preliminary wildlife detections."
@@ -129,30 +157,6 @@ STEPS = [
 ]
 
 
-def run_script(script: str, log_callback) -> None:
-    """Execute the specified Python script and log its output.
-
-    Args:
-        script (str): Path to the Python script (relative or absolute).
-        log_callback (callable): Function to handle logging.
-    """
-    if not script:
-        messagebox.showinfo("Info", "This step requires manual or external intervention.")
-        log_callback("[INFO] No script is configured for this step.")
-        return
-    if not os.path.exists(script):
-        messagebox.showerror("Error", f"Script not found: {script}")
-        log_callback(f"[ERROR] Script not found: {script}")
-        return
-    try:
-        log_callback(f"[INFO] Running: {os.path.basename(script)}")
-        result = subprocess.run(["python", script], capture_output=True, text=True, check=False)
-        if result.stdout:
-            log_callback(result.stdout.strip())
-        if result.stderr:
-            log_callback(f"[ERROR] {result.stderr.strip()}")
-    except Exception as e:
-        log_callback(f"[EXCEPTION] Failed to run {script}: {str(e)}")
 
 
 class SeeOtterGUI:

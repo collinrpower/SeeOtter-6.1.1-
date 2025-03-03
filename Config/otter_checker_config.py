@@ -51,29 +51,11 @@ class OtterCheckerConfig(SerializableConfigBase):
         self.ANNOTATION_AMBIGUOUS_COLOR = [.3, .6, .9, 1]
         self.ANNOTATION_SELECTED_COLOR = [.9, .9, 0, 1]
 
-        self.IMAGE_TAGS = [
-            "Whitecaps",
-            "Glacial Water",
-            "Kelp",
-            "Land",
-            "Fisheries",
-            "Overexposed",
-            "Underexposed",
-            "Blurry",
-            "Grainy",
-            'Cool',
-            'Potential Missed',
-            "Birds"
-        ]
+        self.IMAGE_TAGS = ['Whitecaps', 'Glacial Water', 'Kelp', 'Land', 'Fisheries', 'Overexposed', 'Underexposed', 'Blurry', 'Grainy', 'Cool', 'Potential Missed', 'Birds']
 
-        self.ANNOTATION_CATEGORIES = [
-            ("o", 0),
-            ("p", 1),
-            ("b", 2),
-            ("seal", 3),
-            ('sl', 4),
-            ('porp', 5)
-        ]
+
+        self.ANNOTATION_CATEGORIES = [('o', 0), ('p', 1), ('b', 2), ('seal', 3), ('sl', 4), ('porp', 5)]
+
 
         self.__dict__.update(kwargs)
 

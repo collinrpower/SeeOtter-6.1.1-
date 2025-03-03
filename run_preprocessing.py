@@ -8,6 +8,10 @@ import piexif
 import xml.etree.ElementTree as ET
 import numpy as np
 
+
+import sys
+print("sys.path:", sys.path)
+
 class ImageMetadataGUI:
     def __init__(self, root):
         self.root = root

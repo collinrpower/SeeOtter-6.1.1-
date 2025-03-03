@@ -179,13 +179,16 @@ class MainApplication:
 
             self.progress_label.config(text="Processing complete. Launching validation...")
             self.master.update_idletasks()
-            ValidationWindow(self.master, self.results, csv_path, self.folder_path, self.classifier_name, self.not_classifier_name)
+            # Schedule the ValidationWindow creation in the main thread:
+            self.master.after(0, lambda: ValidationWindow(self.master, self.results, csv_path, self.folder_path,
+                                                          self.classifier_name, self.not_classifier_name))
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred.\n{e}")
         finally:
             self.upload_button.config(state='normal')
             self.progress_label.config(text="Processing complete.")
             self.progress_bar['value'] = 0
+
 
 class ValidationWindow:
     def __init__(self, master, results, csv_path, folder_path, classifier_name, not_classifier_name):
