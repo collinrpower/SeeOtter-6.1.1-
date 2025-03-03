@@ -1,0 +1,22 @@
+{
+    "percent_image_overlap": 0.01,
+    "max_gps_y_offset_difference": 0.01,
+    "left_camera": {
+        "camera_type": "WaldoLeftCamera",
+        "gps_center_x": 0.995,
+        "gps_center_y": 0.5,
+        "gps_delay_offset": 0,
+        "camera_roll": 0,
+        "altitude_offset": 0,
+        "fov_offset": 0
+    },
+    "right_camera": {
+        "camera_type": "WaldoRightCamera",
+        "gps_center_x": 0.005,
+        "gps_center_y": 0.5,
+        "gps_delay_offset": 0,
+        "camera_roll": 0,
+        "altitude_offset": 0,
+        "fov_offset": 0
+    }
+}

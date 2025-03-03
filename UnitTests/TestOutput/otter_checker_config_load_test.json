@@ -1,0 +1,93 @@
+{
+    "MIN_CONFIDENCE": 0.4,
+    "SHOW_IMAGES_WITH_NO_PREDICTIONS": false,
+    "OTTER_CHECKER_SHOW_CORRECT_VALIDATIONS": true,
+    "OTTER_CHECKER_SHOW_INCORRECT_VALIDATIONS": true,
+    "OTTER_CHECKER_SHOW_AMBIGUOUS_VALIDATIONS": true,
+    "OTTER_CHECKER_SHOW_UNVALIDATED_VALIDATIONS": true,
+    "NEXT_PREDICTION_TRANSITION_TIME": 0.15,
+    "POST_VALIDATION_DELAY": 0.2,
+    "DEFAULT_ZOOM": 5,
+    "TOOLTIP_DELAY": 1.0,
+    "VALIDATOR_MODE": false,
+    "VALIDATOR_NAME": null,
+    "ACCENT_COLOR": "Orange",
+    "BUTTON_FONT_SIZE": 24,
+    "LEFT_PANEL_WIDTH": 340,
+    "BUTTON_BACKGROUND_COLOR": [
+        0.2,
+        0.2,
+        0.22,
+        1
+    ],
+    "ANNOTATION_UNVALIDATED_COLOR": [
+        0.4,
+        0.4,
+        0.4,
+        1
+    ],
+    "ANNOTATION_CORRECT_COLOR": [
+        0.05,
+        0.8,
+        0.05,
+        1
+    ],
+    "ANNOTATION_INCORRECT_COLOR": [
+        1,
+        0,
+        0,
+        1
+    ],
+    "ANNOTATION_AMBIGUOUS_COLOR": [
+        0.3,
+        0.6,
+        0.9,
+        1
+    ],
+    "ANNOTATION_SELECTED_COLOR": [
+        0.9,
+        0.9,
+        0,
+        1
+    ],
+    "IMAGE_TAGS": [
+        "Whitecaps",
+        "Glacial Water",
+        "Kelp",
+        "Land",
+        "Fisheries",
+        "Overexposed",
+        "Underexposed",
+        "Blurry",
+        "Grainy",
+        "Cool",
+        "Potential Missed",
+        "Birds"
+    ],
+    "ANNOTATION_CATEGORIES": [
+        [
+            "o",
+            0
+        ],
+        [
+            "p",
+            1
+        ],
+        [
+            "b",
+            2
+        ],
+        [
+            "seal",
+            3
+        ],
+        [
+            "sl",
+            4
+        ],
+        [
+            "porp",
+            5
+        ]
+    ]
+}
