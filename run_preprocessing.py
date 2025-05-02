@@ -8,73 +8,67 @@ import piexif
 import xml.etree.ElementTree as ET
 import numpy as np
 
-
-import sys
-print("sys.path:", sys.path)
-
 class ImageMetadataGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Image Metadata Extractor and Cropper")
 
-        # Variables for file/folder paths, crop size, KML, etc.
+        # Variables
         self.folder_path = tk.StringVar()
         self.transect_file = tk.StringVar()
         self.final_metadata_csv = tk.StringVar()
         self.input_folder = tk.StringVar()
         self.output_folder = tk.StringVar()
         self.output_csv = tk.StringVar()
-        self.crop_pixel_size = tk.StringVar()
+        self.crop_pixel_size = tk.StringVar(value="125")
         self.kml_file = tk.StringVar()
-
-        # Defaults
-        self.crop_pixel_size.set("125")
         self.min_altitude = tk.StringVar(value="152")
         self.max_altitude = tk.StringVar(value="244")
+        self.process_all = tk.BooleanVar(value=False)  # New checkbox
 
         self.create_widgets()
 
     def create_widgets(self):
-        instruction_text = (
+        instr = (
             "5. Run Preprocessing\n"
             "a. For input folder: select your Images folder inside your MM_DD folder\n"
             "b. For the transect csv: select the transect assignment csv created in step 4\n"
             "c. (Optional) Select KML for GPS correction\n"
             "d. Run ‘Extract & Assign Transects’"
         )
-        tk.Label(self.root, text=instruction_text, justify="left").grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+        tk.Label(self.root, text=instr, justify="left").grid(row=0, column=0, columnspan=3, padx=10, pady=10)
 
-        tk.Label(self.root, text="Select Input Folder:").grid(row=1, column=0, padx=10, pady=10, sticky="w")
-        tk.Entry(self.root, textvariable=self.folder_path, width=40).grid(row=1, column=1, padx=10, pady=10)
-        tk.Button(self.root, text="Browse", command=self.browse_folder).grid(row=1, column=2, padx=10, pady=10)
+        tk.Label(self.root, text="Select Input Folder:").grid(row=1, column=0, sticky="w", padx=10, pady=5)
+        tk.Entry(self.root, textvariable=self.folder_path, width=40).grid(row=1, column=1, padx=10, pady=5)
+        tk.Button(self.root, text="Browse", command=self.browse_folder).grid(row=1, column=2, padx=10, pady=5)
 
-        tk.Label(self.root, text="Select Transect CSV:").grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        tk.Entry(self.root, textvariable=self.transect_file, width=40).grid(row=2, column=1, padx=10, pady=10)
-        tk.Button(self.root, text="Browse", command=self.browse_csv).grid(row=2, column=2, padx=10, pady=10)
+        tk.Label(self.root, text="Select Transect CSV:").grid(row=2, column=0, sticky="w", padx=10, pady=5)
+        tk.Entry(self.root, textvariable=self.transect_file, width=40).grid(row=2, column=1, padx=10, pady=5)
+        tk.Button(self.root, text="Browse", command=self.browse_csv).grid(row=2, column=2, padx=10, pady=5)
 
-        tk.Label(self.root, text="Select KML File:").grid(row=3, column=0, padx=10, pady=10, sticky="w")
-        tk.Entry(self.root, textvariable=self.kml_file, width=40).grid(row=3, column=1, padx=10, pady=10)
-        tk.Button(self.root, text="Browse", command=self.browse_kml).grid(row=3, column=2, padx=10, pady=10)
+        tk.Label(self.root, text="Select KML File:").grid(row=3, column=0, sticky="w", padx=10, pady=5)
+        tk.Entry(self.root, textvariable=self.kml_file, width=40).grid(row=3, column=1, padx=10, pady=5)
+        tk.Button(self.root, text="Browse", command=self.browse_kml).grid(row=3, column=2, padx=10, pady=5)
 
-        tk.Label(self.root, text="Crop Pixel Size:").grid(row=4, column=0, padx=10, pady=10, sticky="w")
-        tk.Entry(self.root, textvariable=self.crop_pixel_size, width=10).grid(row=4, column=1, padx=10, pady=10)
+        tk.Label(self.root, text="Crop Pixel Size:").grid(row=4, column=0, sticky="w", padx=10, pady=5)
+        tk.Entry(self.root, textvariable=self.crop_pixel_size, width=10).grid(row=4, column=1, padx=10, pady=5)
 
-        tk.Label(self.root, text="Min Altitude (m):").grid(row=5, column=0, padx=10, pady=10, sticky="w")
-        tk.Entry(self.root, textvariable=self.min_altitude, width=10).grid(row=5, column=1, padx=10, pady=10)
+        tk.Label(self.root, text="Min Altitude (m):").grid(row=5, column=0, sticky="w", padx=10, pady=5)
+        tk.Entry(self.root, textvariable=self.min_altitude, width=10).grid(row=5, column=1, padx=10, pady=5)
 
-        tk.Label(self.root, text="Max Altitude (m):").grid(row=6, column=0, padx=10, pady=10, sticky="w")
-        tk.Entry(self.root, textvariable=self.max_altitude, width=10).grid(row=6, column=1, padx=10, pady=10)
+        tk.Label(self.root, text="Max Altitude (m):").grid(row=6, column=0, sticky="w", padx=10, pady=5)
+        tk.Entry(self.root, textvariable=self.max_altitude, width=10).grid(row=6, column=1, padx=10, pady=5)
 
-        tk.Button(self.root, text="Convert KML to CSV", command=self.run_kml_to_csv_conversion).grid(row=7, column=0,
-                                                                                                     columnspan=3,
-                                                                                                     padx=10, pady=10)
-        tk.Button(self.root, text="Extract & Assign Transects", command=self.run_extract_and_assign).grid(row=8,
-                                                                                                          column=0,
-                                                                                                          columnspan=3,
-                                                                                                          padx=10,
-                                                                                                          pady=10)
-        tk.Button(self.root, text="Crop Images", command=self.run_crop_images).grid(row=9, column=0, columnspan=3,
-                                                                                    padx=10, pady=10)
+        # New checkbox to ignore filters
+        tk.Checkbutton(
+            self.root,
+            text="Process All Images (ignore transect/altitude)",
+            variable=self.process_all
+        ).grid(row=7, column=0, columnspan=3, padx=10, pady=5)
+
+        tk.Button(self.root, text="Convert KML to CSV", command=self.run_kml_to_csv_conversion).grid(row=8, column=0, columnspan=3, padx=10, pady=5)
+        tk.Button(self.root, text="Extract & Assign Transects", command=self.run_extract_and_assign).grid(row=9, column=0, columnspan=3, padx=10, pady=5)
+        tk.Button(self.root, text="Crop Images", command=self.run_crop_images).grid(row=10, column=0, columnspan=3, padx=10, pady=5)
 
     def browse_folder(self):
         folder = filedialog.askdirectory()
@@ -95,302 +89,244 @@ class ImageMetadataGUI:
         if not self.kml_file.get():
             messagebox.showerror("Error", "Please select a KML file.")
             return
-        self.kml_to_csv(self.kml_file.get(), os.path.splitext(self.kml_file.get())[0] + '.csv')
+        out_csv = os.path.splitext(self.kml_file.get())[0] + '.csv'
+        self.kml_to_csv(self.kml_file.get(), out_csv)
         messagebox.showinfo("Success", "KML file converted to CSV successfully!")
 
     def run_extract_and_assign(self):
         if not self.folder_path.get() or not self.transect_file.get():
             messagebox.showerror("Error", "Please select both the input folder and the transect CSV.")
             return
-
-        # Set final metadata CSV and output folder
         self.final_metadata_csv.set(os.path.join(self.folder_path.get(), 'final_metadata.csv'))
         self.output_folder.set(os.path.join(self.folder_path.get(), 'cropped_images_on_tx', 'Images'))
-        self.output_csv.set(os.path.join(self.folder_path.get(), 'final_metadata.csv'))
+        self.output_csv.set(self.final_metadata_csv.get())
 
-        # Perform assignment
-        self.extract_and_assign_transects(self.folder_path.get(),
-                                          self.transect_file.get(),
-                                          self.final_metadata_csv.get())
+        self.extract_and_assign_transects(
+            self.folder_path.get(),
+            self.transect_file.get(),
+            self.final_metadata_csv.get()
+        )
 
-        # If there's a KML CSV, integrate
-        if os.path.exists(os.path.splitext(self.kml_file.get())[0] + '.csv'):
+        kml_csv = os.path.splitext(self.kml_file.get())[0] + '.csv'
+        if os.path.exists(kml_csv):
             self.integrate_csv_data()
             messagebox.showinfo("Success", "Transects extracted, assigned, and integrated successfully!")
         else:
             messagebox.showinfo("Success", "Transects extracted and assigned successfully!")
 
     def run_crop_images(self):
-        if not self.final_metadata_csv.get() or not self.folder_path.get() or not self.output_folder.get():
-            messagebox.showerror("Error", "Please run 'Extract & Assign Transects' first.")
+        if not self.folder_path.get():
+            messagebox.showerror("Error", "Please select the input folder first.")
             return
 
+        meta_csv = self.final_metadata_csv.get()
+        if not meta_csv or not os.path.exists(meta_csv):
+            df = self.extract_metadata_from_folder(self.folder_path.get())
+            meta_csv = os.path.join(self.folder_path.get(), 'metadata_only.csv')
+            df.to_csv(meta_csv, index=False)
+
         self.input_folder.set(self.folder_path.get())
-        self.crop_images_based_on_transect(self.final_metadata_csv.get(),
-                                           self.input_folder.get(),
-                                           self.output_folder.get(),
-                                           crop_amount=int(self.crop_pixel_size.get()))
+        self.output_folder.set(os.path.join(self.folder_path.get(), 'cropped_images'))
+        self.crop_images_based_on_transect(
+            meta_csv,
+            self.input_folder.get(),
+            self.output_folder.get(),
+            crop_amount=int(self.crop_pixel_size.get()),
+            ignore_filters=self.process_all.get()
+        )
         messagebox.showinfo("Success", "Images cropped successfully!")
 
-    # -------------------------------
-    # Core logic functions
-    # -------------------------------
+    # --- Core logic below unchanged except for new parameter in crop_images_based_on_transect ---
+
     def get_geotagging(self, exif):
         if not exif:
             return None
-        geotagging = {}
-        for (idx, tag) in TAGS.items():
+        geo = {}
+        for idx, tag in TAGS.items():
             if tag == 'GPSInfo':
                 if idx not in exif:
                     return None
-                for (key, val) in GPSTAGS.items():
+                for key, val in GPSTAGS.items():
                     if key in exif[idx]:
-                        geotagging[val] = exif[idx][key]
-        return geotagging
+                        geo[val] = exif[idx][key]
+        return geo
 
-    def dms_to_decimal(self, degrees, minutes, seconds, ref):
-        decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
-        if ref in ['S', 'W']:
-            decimal = -decimal
-        return decimal
+    def dms_to_decimal(self, d, m, s, ref):
+        dec = d + (m / 60.0) + (s / 3600.0)
+        return -dec if ref in ['S', 'W'] else dec
 
     def extract_metadata_from_folder(self, folder_path):
-        data = []
-        for root_, dirs, files in os.walk(folder_path):
-            for file in files:
-                if file.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    img_path = os.path.join(root_, file).replace('\\', '/')
+        rows = []
+        for root_, _, files in os.walk(folder_path):
+            for f in files:
+                if f.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    path = os.path.join(root_, f).replace('\\', '/')
                     try:
-                        img = Image.open(img_path)
-                        exif_data = img._getexif()
+                        img = Image.open(path)
+                        ex = img._getexif()
                     except:
-                        exif_data = None
-
-                    if not exif_data:
-                        data.append([img_path, 'NA', 'NA', 'NA', 'NA'])
+                        ex = None
+                    if not ex:
+                        rows.append([path, 'NA', 'NA', 'NA', 'NA'])
                         continue
-
-                    datetime_original = exif_data.get(36867, 'NA')
-                    geotags = self.get_geotagging(exif_data)
-
-                    if not geotags:
-                        data.append([img_path, datetime_original, 'NA', 'NA', 'NA'])
+                    dt = ex.get(36867, 'NA')
+                    geo = self.get_geotagging(ex)
+                    if not geo:
+                        rows.append([path, dt, 'NA', 'NA', 'NA'])
                         continue
-
-                    # You could parse altitude here if it's a tuple
-                    altitude = geotags.get('GPSAltitude', 'NA')
-                    latitude = 'NA'
-                    longitude = 'NA'
-                    if 'GPSLatitude' in geotags and 'GPSLatitudeRef' in geotags:
-                        lat_tuple = geotags['GPSLatitude']
-                        lat_ref = geotags['GPSLatitudeRef']
-                        latitude = self.dms_to_decimal(*lat_tuple, lat_ref)
-                    if 'GPSLongitude' in geotags and 'GPSLongitudeRef' in geotags:
-                        lon_tuple = geotags['GPSLongitude']
-                        lon_ref = geotags['GPSLongitudeRef']
-                        longitude = self.dms_to_decimal(*lon_tuple, lon_ref)
-
-                    data.append([img_path, datetime_original, latitude, longitude, altitude])
-
-        return pd.DataFrame(data, columns=['Filepath', 'DatetimeOriginal', 'Latitude', 'Longitude', 'Altitude'])
+                    alt = geo.get('GPSAltitude', 'NA')
+                    lat = lon = 'NA'
+                    if 'GPSLatitude' in geo and 'GPSLatitudeRef' in geo:
+                        lat = self.dms_to_decimal(*geo['GPSLatitude'], geo['GPSLatitudeRef'])
+                    if 'GPSLongitude' in geo and 'GPSLongitudeRef' in geo:
+                        lon = self.dms_to_decimal(*geo['GPSLongitude'], geo['GPSLongitudeRef'])
+                    rows.append([path, dt, lat, lon, alt])
+        return pd.DataFrame(rows, columns=['Filepath', 'DatetimeOriginal', 'Latitude', 'Longitude', 'Altitude'])
 
     def extract_and_assign_transects(self, folder_path, transect_file, output_csv):
-        # Automatically fix backslashes in CSV and overwrite
         df = pd.read_csv(transect_file)
-        if 'start_img' in df.columns and 'end_img' in df.columns:
-            df['start_img'] = df['start_img'].astype(str).apply(lambda x: x.replace('\\', '/') if x else x)
-            df['end_img']   = df['end_img'].astype(str).apply(lambda x: x.replace('\\', '/') if x else x)
+        if 'start_img' in df and 'end_img' in df:
+            df['start_img'] = df['start_img'].astype(str).str.replace('\\', '/', regex=False)
+            df['end_img']   = df['end_img'].astype(str).str.replace('\\', '/', regex=False)
             df.to_csv(transect_file, index=False)
 
-        transect_assignment = pd.read_csv(transect_file)
-        metadata = self.extract_metadata_from_folder(folder_path)
-        metadata['Transect'] = 'NA'
+        ta = pd.read_csv(transect_file)
+        md = self.extract_metadata_from_folder(folder_path)
+        md['Transect'] = 'NA'
 
-        for index, row in transect_assignment.iterrows():
-            start_time = None
-            end_time = None
-
-            # If columns exist for start_img/end_img
-            if 'start_img' in row and 'end_img' in row and \
-               pd.notna(row['start_img']) and pd.notna(row['end_img']):
-                start_time_entries = metadata.loc[metadata['Filepath'] == row['start_img'], 'DatetimeOriginal'].values
-                end_time_entries   = metadata.loc[metadata['Filepath'] == row['end_img'], 'DatetimeOriginal'].values
-                if start_time_entries.size > 0 and end_time_entries.size > 0:
-                    start_time = start_time_entries[0]
-                    end_time   = end_time_entries[0]
-
-            # Fallback if times are present
-            if (start_time is None or end_time is None) and \
-               'start_time' in row and 'end_time' in row:
-                start_time = row['start_time']
-                end_time   = row['end_time']
-
-            if not (start_time and end_time):
+        for _, row in ta.iterrows():
+            st = et = None
+            if 'start_img' in row and 'end_img' in row and pd.notna(row['start_img']) and pd.notna(row['end_img']):
+                s = md.loc[md['Filepath']==row['start_img'], 'DatetimeOriginal'].values
+                e = md.loc[md['Filepath']==row['end_img'],   'DatetimeOriginal'].values
+                if s.size and e.size:
+                    st, et = s[0], e[0]
+            if (st is None or et is None) and 'start_time' in row and 'end_time' in row:
+                st, et = row['start_time'], row['end_time']
+            if not (st and et):
                 continue
+            mask = (md['DatetimeOriginal'] >= str(st)) & (md['DatetimeOriginal'] <= str(et))
+            md.loc[mask, 'Transect'] = row.get('transect_id', 'NA')
 
-            mask = (metadata['DatetimeOriginal'] >= str(start_time)) & \
-                   (metadata['DatetimeOriginal'] <= str(end_time))
-            metadata.loc[mask, 'Transect'] = row.get('transect_id', 'NA')
-
-        metadata.to_csv(output_csv, index=False)
+        md.to_csv(output_csv, index=False)
         return output_csv
 
-    def kml_to_csv(self, kml_filepath, csv_filepath):
-        tree = ET.parse(kml_filepath)
+    def kml_to_csv(self, kml_fp, csv_fp):
+        tree = ET.parse(kml_fp)
         root_ = tree.getroot()
-
-        ns = {'kml': 'http://www.opengis.net/kml/2.2'}
-        ns_ext = {'gx': 'http://www.google.com/kml/ext/2.2'}
-
-        coordinates = []
-        timestamps = []
-
-        for placemark in root_.findall(".//kml:Placemark", ns):
-            coords = placemark.findall(".//gx:coord", ns_ext)
-            whens = placemark.findall(".//kml:when", ns)
-            for coord, when_elem in zip(coords, whens):
-                coordinate = coord.text.strip().split(' ')
-                timestamp = when_elem.text
-                coordinates.append(coordinate)
-                timestamps.append(timestamp)
-
-        df = pd.DataFrame(coordinates, columns=["Longitude", "Latitude", "Altitude"])
-        df["Datetime"] = timestamps
-        df.to_csv(csv_filepath, index=False)
+        ns = {'kml':'http://www.opengis.net/kml/2.2'}
+        ns_ext = {'gx':'http://www.google.com/kml/ext/2.2'}
+        coords, times = [], []
+        for pm in root_.findall(".//kml:Placemark", ns):
+            for c, w in zip(pm.findall(".//gx:coord", ns_ext), pm.findall(".//kml:when", ns)):
+                coords.append(c.text.strip().split())
+                times.append(w.text)
+        df = pd.DataFrame(coords, columns=["Longitude","Latitude","Altitude"])
+        df["Datetime"] = times
+        df.to_csv(csv_fp, index=False)
 
     def integrate_csv_data(self):
-        csv1 = pd.read_csv(self.final_metadata_csv.get())
-        csv2_path = os.path.splitext(self.kml_file.get())[0] + '.csv'
-        if not os.path.exists(csv2_path):
+        base = pd.read_csv(self.final_metadata_csv.get())
+        kml_csv = os.path.splitext(self.kml_file.get())[0] + '.csv'
+        if not os.path.exists(kml_csv):
             return
+        a = base.copy()
+        b = pd.read_csv(kml_csv)
+        a['Datetime'] = pd.to_datetime(a['DatetimeOriginal'], format='%Y:%m:%d %H:%M:%S', errors='coerce')
+        b['Datetime'] = pd.to_datetime(b['Datetime'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce')
+        a['TS'] = a['Datetime'].apply(lambda x: x.timestamp() if not pd.isnull(x) else np.nan)
+        b['TS'] = b['Datetime'].apply(lambda x: x.timestamp() if not pd.isnull(x) else np.nan)
 
-        csv2 = pd.read_csv(csv2_path)
-        csv1['Datetime'] = pd.to_datetime(csv1['DatetimeOriginal'], format='%Y:%m:%d %H:%M:%S', errors='coerce')
-        csv2['Datetime'] = pd.to_datetime(csv2['Datetime'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce')
-        csv1['Timestamp'] = csv1['Datetime'].apply(lambda x: x.timestamp() if not pd.isnull(x) else np.nan)
-        csv2['Timestamp'] = csv2['Datetime'].apply(lambda x: x.timestamp() if not pd.isnull(x) else np.nan)
+        def closest(r):
+            diffs = (b['TS'] - r['TS']).abs()
+            idx = diffs.idxmin()
+            return b.loc[idx, ['Latitude','Longitude','Altitude']] if diffs[idx] <= 3 else pd.Series([np.nan]*3, index=['Latitude','Longitude','Altitude'])
 
-        def find_closest(row):
-            time_diff = (csv2['Timestamp'] - row['Timestamp']).abs()
-            closest_idx = time_diff.idxmin()
-            closest_time_diff = time_diff[closest_idx]
-            if closest_time_diff <= 3:
-                return csv2.loc[closest_idx, ['Latitude', 'Longitude', 'Altitude']]
-            else:
-                return pd.Series([np.nan, np.nan, np.nan], index=['Latitude', 'Longitude', 'Altitude'])
+        cv = a.apply(closest, axis=1)
+        a[['LatitudeNew','LongitudeNew','AltitudeNew']] = cv
+        a.to_csv(os.path.splitext(self.final_metadata_csv.get())[0] + '_updated.csv', index=False)
 
-        closest_values = csv1.apply(find_closest, axis=1)
-        csv1[['LatitudeNew', 'LongitudeNew', 'AltitudeNew']] = closest_values
-        csv1.to_csv(os.path.splitext(self.final_metadata_csv.get())[0] + '_updated.csv', index=False)
-
-    def crop_images_based_on_transect(self, final_metadata_csv, input_folder, output_folder, crop_amount=125):
+    def crop_images_based_on_transect(self, final_metadata_csv, input_folder, output_folder, crop_amount=125, ignore_filters=False):
         import concurrent.futures
-        import threading
 
         def decimal_to_dms(decimal):
-            degrees = int(decimal)
-            minutes = int((decimal - degrees) * 60)
-            seconds = ((decimal - degrees - minutes / 60) * 3600)
-            return ((degrees, 1), (minutes, 1), (int(seconds * 1000), 1000))
+            d = int(decimal)
+            m = int((decimal - d) * 60)
+            s = (decimal - d - m/60) * 3600
+            return ((d,1),(m,1),(int(s*1000),1000))
 
-        # Load metadata
-        updated_csv_path = os.path.join(os.path.dirname(final_metadata_csv), 'final_metadata_updated.csv')
-        if os.path.exists(updated_csv_path):
-            metadata = pd.read_csv(updated_csv_path)
-        else:
-            metadata = pd.read_csv(final_metadata_csv)
+        upd_csv = os.path.join(os.path.dirname(final_metadata_csv), 'final_metadata_updated.csv')
+        md = pd.read_csv(upd_csv) if os.path.exists(upd_csv) else pd.read_csv(final_metadata_csv)
 
-        # Filter valid images
-        metadata['Altitude'] = pd.to_numeric(metadata['Altitude'], errors='coerce')
-        valid_images = metadata[
-            metadata['Transect'].notna() &
-            (metadata['Transect'] != 'NA') &
-            (metadata['Altitude'] >= float(self.min_altitude.get())) &
-            (metadata['Altitude'] <= float(self.max_altitude.get()))
-            ].copy()
+        if not ignore_filters:
+            if 'Transect' in md.columns:
+                md = md[md['Transect'].notna() & (md['Transect']!='NA')]
+            if 'Altitude' in md.columns:
+                md['Altitude'] = pd.to_numeric(md['Altitude'], errors='coerce')
+                md = md[(md['Altitude'] >= float(self.min_altitude.get())) & (md['Altitude'] <= float(self.max_altitude.get()))]
+
+        valid_images = md.copy()
 
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        print(f"Number of images to be cropped: {len(valid_images)}")
-
-        # 1) Assign all new filenames in a single pass (no threading)
-        if not hasattr(self, 'process_image_count_0'):
-            self.process_image_count_0 = 0
-        if not hasattr(self, 'process_image_count_1'):
-            self.process_image_count_1 = 0
-
+        # assign new filenames
+        self.count0 = getattr(self, 'count0', 0)
+        self.count1 = getattr(self, 'count1', 0)
         for idx, row in valid_images.iterrows():
-            folder_name = os.path.basename(os.path.dirname(row['Filepath']))
-            if folder_name == '0':
-                self.process_image_count_0 += 1
-                img_count = self.process_image_count_0
-                prefix = '0'
-            elif folder_name == '1':
-                self.process_image_count_1 += 1
-                img_count = self.process_image_count_1
-                prefix = '1'
+            folder = os.path.basename(os.path.dirname(row['Filepath']))
+            if folder == '0':
+                self.count0 += 1
+                num, pref = self.count0, '0'
+            elif folder == '1':
+                self.count1 += 1
+                num, pref = self.count1, '1'
             else:
-                # If not in folder "0" or "1", skip naming
                 valid_images.at[idx, 'NewFilename'] = None
                 continue
+            valid_images.at[idx, 'NewFilename'] = f"{pref}_000_00_{num:03d}.jpg"
 
-            new_filename = f"{prefix}_000_00_{img_count:03d}.jpg"
-            valid_images.at[idx, 'NewFilename'] = new_filename
-
-        # 2) Parallelize cropping only, using the pre-assigned filenames
-        def process_single_image(idx, row):
-            if not row['NewFilename']:
-                return (idx, None)  # skipped images
-
-            image_path = row['Filepath']
-            if not os.path.exists(image_path):
-                return (idx, None)
-
-            img = Image.open(image_path)
-            width, height = img.size
-            new_dimensions = (crop_amount, crop_amount, width - crop_amount, height - crop_amount)
-            cropped_img = img.crop(new_dimensions)
-
+        def process(idx, row):
+            if not row['NewFilename'] or not os.path.exists(row['Filepath']):
+                return idx, None
+            img = Image.open(row['Filepath'])
+            w, h = img.size
+            crop_box = (crop_amount, crop_amount, w, h)
+            crop = img.crop(crop_box)
             try:
-                exif_data = piexif.load(img.info.get("exif", b""))
+                exif = piexif.load(img.info.get("exif", b""))
             except:
-                exif_data = {"0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}}
+                exif = {"0th":{}, "Exif":{}, "GPS":{}, "Interop":{}, "1st":{}}
 
-            # Embed new lat/lon/alt if columns are present
             if 'LatitudeNew' in row and not pd.isna(row['LatitudeNew']):
-                gps_ifd = {
-                    piexif.GPSIFD.GPSLatitudeRef: 'S' if row['LatitudeNew'] < 0 else 'N',
+                gps = {
+                    piexif.GPSIFD.GPSLatitudeRef: 'S' if row['LatitudeNew']<0 else 'N',
                     piexif.GPSIFD.GPSLatitude: decimal_to_dms(abs(row['LatitudeNew'])),
-                    piexif.GPSIFD.GPSLongitudeRef: 'W' if row['LongitudeNew'] < 0 else 'E',
-                    piexif.GPSIFD.GPSLongitude: decimal_to_dms(abs(row['LongitudeNew'])),
-                    piexif.GPSIFD.GPSAltitudeRef: 0,
-                    piexif.GPSIFD.GPSAltitude: (int(abs(row['AltitudeNew']) * 1000), 1000),
+                    piexif.GPSIFD.GPSLongitudeRef:'W' if row['LongitudeNew']<0 else 'E',
+                    piexif.GPSIFD.GPSLongitude:decimal_to_dms(abs(row['LongitudeNew'])),
+                    piexif.GPSIFD.GPSAltitudeRef:0,
+                    piexif.GPSIFD.GPSAltitude:(int(abs(row['AltitudeNew'])*1000),1000),
                 }
-                exif_data['GPS'] = gps_ifd
+                exif['GPS'] = gps
 
-            output_path = os.path.join(output_folder, row['NewFilename'])
-            cropped_img.save(output_path, quality=100, exif=piexif.dump(exif_data))
+            outp = os.path.join(output_folder, row['NewFilename'])
+            crop.save(outp, quality=100, exif=piexif.dump(exif))
+            return idx, outp
 
-            return (idx, output_path)
+        results = {}
+        with concurrent.futures.ThreadPoolExecutor() as exe:
+            futs = {exe.submit(process, i, r): i for i, r in valid_images.iterrows()}
+            for fut in concurrent.futures.as_completed(futs):
+                i, path = fut.result()
+                if path:
+                    results[i] = path
 
-        new_filepaths = {}
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(process_single_image, idx, row): idx for idx, row in valid_images.iterrows()}
-            for fut in concurrent.futures.as_completed(futures):
-                i, out_path = fut.result()
-                if out_path:
-                    new_filepaths[i] = out_path
-                    print(f"Cropped: {out_path}, Transect: {valid_images.loc[i, 'Transect']}")
+        for i, path in results.items():
+            md.loc[i, 'NewFilepath'] = path
 
-        # 3) Update main metadata with new filepaths
-        for i, path_ in new_filepaths.items():
-            metadata.loc[i, 'NewFilepath'] = path_
-
-        metadata.to_csv(final_metadata_csv, index=False)
-        metadata.to_csv(os.path.splitext(final_metadata_csv)[0] + '_updated_filepath.csv', index=False)
-        print(f"Cropping completed. Cropped images are saved in '{output_folder}'.")
-
+        md.to_csv(final_metadata_csv, index=False)
+        md.to_csv(os.path.splitext(final_metadata_csv)[0] + '_updated_filepath.csv', index=False)
+        print(f"Cropping done, saved in {output_folder}")
 
 if __name__ == "__main__":
     root = tk.Tk()
